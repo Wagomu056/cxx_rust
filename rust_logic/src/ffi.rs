@@ -4,7 +4,7 @@
 // このモジュールはC++から呼び出し可能なFFI関数を実装します
 // ===============================================================================
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::os::raw::{c_char, c_void};
 use super::logic::LogicProcessor;
 use super::response::Response;
@@ -62,17 +62,6 @@ pub extern "C" fn free_response(response: *mut Response) {
         unsafe {
             let response = &mut *response;
             response.free_message();
-        }
-    }
-}
-
-/// Rustが確保したメモリを解放する
-#[no_mangle]
-pub extern "C" fn free_rust_string(ptr: *mut c_char) {
-    unsafe {
-        if !ptr.is_null() {
-            // ポインタをCStringに変換し、Rustのメモリ管理に戻す
-            let _ = CString::from_raw(ptr);
         }
     }
 } 
