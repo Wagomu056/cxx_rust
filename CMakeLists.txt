@@ -1,52 +1,30 @@
 cmake_minimum_required(VERSION 3.10)
-project(CxxRustFFI)
 
+project(cxx_rust_ffi)
+
+# C++の標準を17に設定
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# CTestを有効化
-enable_testing()
+# Rustのクレートに関する情報
+set(RUST_CRATE_DIR ${CMAKE_SOURCE_DIR}/rust_logic)
+set(RUST_TARGET_DIR ${RUST_CRATE_DIR}/target)
+set(RUST_RELEASE_TARGET ${RUST_TARGET_DIR}/release)
+set(RUST_LIBRUST_PATH ${RUST_RELEASE_TARGET}/librust_logic.a)
 
-# Rustライブラリのパス（ビルド後に設定する必要があります）
-set(RUST_LIB_DIR ${CMAKE_SOURCE_DIR}/rust_logic/target/release)
+# メッセージを表示
+message(STATUS "Rust library path: ${RUST_LIBRUST_PATH}")
 
-# 共通のソースファイル（mainを除く）
-set(COMMON_SOURCES
-    src/service.cpp
-    src/network.cpp
-)
+# メイン実行ファイルのターゲットを追加
+add_executable(cxx_rust_ffi src/main.cpp src/service.cpp)
 
-# メイン実行ファイル
-add_executable(cxx_rust_ffi src/main.cpp ${COMMON_SOURCES})
+# テスト実行ファイルのターゲットを追加
+add_executable(service_test src/test_service.cpp src/service.cpp)
 
-# インクルードディレクトリ
-target_include_directories(cxx_rust_ffi PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-# Rustライブラリをリンク
-target_link_libraries(cxx_rust_ffi PRIVATE
-    ${RUST_LIB_DIR}/librust_logic.a
-)
-
-# ユニットテスト実行ファイル
-add_executable(test_service src/test_service.cpp ${COMMON_SOURCES})
-target_include_directories(test_service PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(test_service PRIVATE
-    ${RUST_LIB_DIR}/librust_logic.a
-)
+# Rustライブラリを含む
+target_link_libraries(cxx_rust_ffi ${RUST_LIBRUST_PATH} dl pthread)
+target_link_libraries(service_test ${RUST_LIBRUST_PATH} dl pthread)
 
 # テストを追加
-add_test(
-    NAME ServiceMessageLoggingTest
-    COMMAND test_service
-)
-
-# Rustライブラリのビルドコマンド（両方の対象で共有）
-add_custom_command(TARGET cxx_rust_ffi PRE_BUILD
-    COMMAND cd ${CMAKE_SOURCE_DIR}/rust_logic && cargo build --release
-    COMMENT "Building Rust library..."
-)
-
-add_custom_command(TARGET test_service PRE_BUILD
-    COMMAND cd ${CMAKE_SOURCE_DIR}/rust_logic && cargo build --release
-    COMMENT "Building Rust library for tests..."
-) 
+enable_testing()
+add_test(NAME ServiceMessageLoggingTest COMMAND service_test) 

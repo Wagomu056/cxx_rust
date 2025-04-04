@@ -1,8 +1,9 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 
 use crate::logic::LogicProcessor;
 use crate::network::Network;
+use crate::response::{Response, free_message_ptr};
 
 //---------------------------------------------------------------------
 // C++に公開するFFI関数
@@ -10,59 +11,53 @@ use crate::network::Network;
 
 /// LogicProcessorのインスタンスを作成
 #[no_mangle]
-pub extern "C" fn logic_processor_new() -> *mut LogicProcessor {
-    let processor = Box::new(LogicProcessor::new());
-    Box::into_raw(processor)
+pub extern "C" fn logic_processor_new() -> *mut c_void {
+    let processor = LogicProcessor::new();
+    let boxed = Box::new(processor);
+    Box::into_raw(boxed) as *mut c_void
 }
 
 /// LogicProcessorのインスタンスを破棄
 #[no_mangle]
-pub extern "C" fn logic_processor_free(ptr: *mut LogicProcessor) {
-    if !ptr.is_null() {
-        unsafe {
-            let _ = Box::from_raw(ptr);
-        }
+pub extern "C" fn logic_processor_free(ptr: *mut c_void) {
+    if ptr.is_null() {
+        return;
+    }
+    
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut LogicProcessor);
     }
 }
 
 /// LogicProcessorを使ってメッセージを処理し、Networkを通じて送信
 #[no_mangle]
-pub extern "C" fn logic_processor_process(
-    processor: *const LogicProcessor, 
-    network: *mut Network,
-    input: *const c_char
-) -> *mut c_char {
-    let processor = unsafe {
-        if processor.is_null() {
-            return CString::new("Null processor").unwrap().into_raw();
+pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_char) -> Response {
+    let result = unsafe {
+        if ptr.is_null() || message.is_null() {
+            return Response::error(400, "無効なポインタが渡されました");
         }
-        &*processor
+        
+        let processor = &mut *(ptr as *mut LogicProcessor);
+        let c_str = CStr::from_ptr(message);
+        
+        match c_str.to_str() {
+            Ok(msg) => {
+                let response = processor.process_message(msg);
+                Response::success(200, &response)
+            },
+            Err(_) => {
+                Response::error(400, "無効なUTF-8文字列です")
+            }
+        }
     };
 
-    // C文字列をRustの文字列に変換
-    let c_str = unsafe {
-        if input.is_null() {
-            return CString::new("Null input").unwrap().into_raw();
-        }
-        CStr::from_ptr(input)
-    };
-    
-    let input_str = match c_str.to_str() {
-        Ok(s) => s,
-        Err(_) => return CString::new("Invalid UTF-8").unwrap().into_raw(),
-    };
-    
-    // LogicProcessor構造体を使用してロジック処理を実行
-    let processed = processor.process(input_str);
-    
-    // Networkを使用して送信
-    let result = match processor.send_via_network(network, &processed) {
-        Ok(response) => response,
-        Err(err) => format!("Error: {}", err),
-    };
-    
-    // 結果をC文字列に変換してポインタを返す
-    CString::new(result).unwrap().into_raw()
+    result
+}
+
+/// Responseのメッセージフィールドのメモリを解放します
+#[no_mangle]
+pub extern "C" fn free_response_message(message: *mut c_char) {
+    free_message_ptr(message);
 }
 
 /// Rustが確保したメモリを解放する

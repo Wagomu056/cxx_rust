@@ -1,68 +1,67 @@
 #include "service.h"
-#include "network.h"
+#include "response.h"
 #include <iostream>
 #include <cassert>
 #include <string>
 #include <functional>
 
-// メッセージ処理が正しくログに記録されることをテストする関数
-bool test_message_logging() {
-    // テスト前にメッセージログをクリア
-    Network::clearMessageLog();
-    
+// メッセージ処理とResponseの構造が正しく機能することをテストする関数
+bool test_response_handling() {
     // テスト用のメッセージ
-    const std::string test_message = "Test message from unit test";
+    const std::string test_message = "テストメッセージ";
     
     // 結果を格納する変数
-    std::string result;
     bool callback_called = false;
+    bool response_success = false;
+    int response_code = 0;
+    std::string response_message;
     
-    // Serviceを作成して処理を実行（コールバック版）
+    // Serviceを作成して処理を実行
     Service service;
-    service.processMessage(test_message, [&result, &callback_called](const std::string& response) {
-        result = response;
+    service.processMessage(test_message, [&](const Response& response) {
         callback_called = true;
-        std::cout << "Callback received: " << response << std::endl;
+        response_success = response.success;
+        response_code = response.response_code;
+        response_message = response.message;
+        
+        std::cout << "コールバック受信: " 
+                  << "成功=" << (response.success ? "はい" : "いいえ")
+                  << ", コード=" << response.response_code
+                  << ", メッセージ='" << response.message << "'" << std::endl;
     });
     
     // コールバックが呼ばれたか確認
     if (!callback_called) {
-        std::cerr << "Error: Callback was not called" << std::endl;
+        std::cerr << "エラー: コールバックが呼び出されませんでした" << std::endl;
         return false;
     }
     
-    // ログを取得
-    std::vector<std::string> log = Network::getMessageLog();
-    
-    // 検証: ログにメッセージが1つだけ記録されていること
-    if (log.size() != 1) {
-        std::cerr << "Error: Expected 1 log entry, but got " << log.size() << std::endl;
+    // レスポンスの内容を検証
+    if (!response_success) {
+        std::cerr << "エラー: レスポンスが成功ではありません" << std::endl;
         return false;
     }
     
-    // 検証: ログの内容が期待通りであること (Rustの処理が適用されたもの)
-    std::string expected_content = test_message + " (processed by Rust logic)";
-    if (log[0] != expected_content) {
-        std::cerr << "Error: Expected log content '" << expected_content 
-                  << "', but got '" << log[0] << "'" << std::endl;
+    if (response_code != 200) {
+        std::cerr << "エラー: レスポンスコードが期待値（200）ではありません: " 
+                  << response_code << std::endl;
         return false;
     }
     
-    // 検証: コールバックで受け取った結果の内容
-    if (result.find("Response:") == std::string::npos || 
-        result.find(test_message) == std::string::npos ||
-        result.find("processed by Rust logic") == std::string::npos) {
-        std::cerr << "Error: Unexpected result content: " << result << std::endl;
+    // メッセージの内容を検証
+    if (response_message.find(test_message) == std::string::npos) {
+        std::cerr << "エラー: レスポンスメッセージに元のメッセージが含まれていません: " 
+                  << response_message << std::endl;
         return false;
     }
     
-    std::cout << "Test passed: Message was correctly logged and callback was called" << std::endl;
+    std::cout << "テスト成功: レスポンス構造が正しく処理されました" << std::endl;
     return true;
 }
 
 // ユニットテストのメイン関数
 int main() {
-    if (test_message_logging()) {
+    if (test_response_handling()) {
         return 0; // テスト成功
     } else {
         return 1; // テスト失敗

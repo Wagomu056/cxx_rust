@@ -1,35 +1,44 @@
-use crate::network::Network;
+// ===============================================================================
+// ロジック処理の実装
+// 
+// このモジュールはビジネスロジックの実装を担当します
+// ===============================================================================
 
-/// ロジック処理を行う構造体
+use std::fmt;
+
+/// ロジック処理を担当するメインの構造体
 pub struct LogicProcessor {
-    /// メッセージに追加するプレフィックス
-    prefix: String,
+    messages_processed: usize,
 }
 
 impl LogicProcessor {
     /// 新しいLogicProcessorインスタンスを作成
     pub fn new() -> Self {
         LogicProcessor {
-            prefix: "(processed by Rust logic)".to_string(),
+            messages_processed: 0,
         }
-    }
-
-    /// メッセージを処理するメソッド
-    pub fn process(&self, input: &str) -> String {
-        println!("Rust logic: Processing message: {}", input);
-        format!("{} {}", input, self.prefix)
     }
     
-    /// C++のNetworkを使用してメッセージを送信するメソッド
-    pub fn send_via_network(&self, network: *mut Network, message: &str) -> Result<String, String> {
-        if network.is_null() {
-            return Err("Network pointer is null".to_string());
-        }
+    /// メッセージを処理して結果を返す
+    pub fn process_message(&mut self, message: &str) -> String {
+        // メッセージの処理カウントを増やす
+        self.messages_processed += 1;
         
-        // Networkをmutで参照
-        let network = unsafe { &mut *network };
+        // 簡単なメッセージ処理のロジック
+        let processed = format!(
+            "処理結果: '{}' (これまでに処理したメッセージ数: {})",
+            message, 
+            self.messages_processed
+        );
         
-        // Networkのsendメソッドを使用
-        network.send(message)
+        processed
+    }
+}
+
+impl fmt::Debug for LogicProcessor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LogicProcessor")
+            .field("messages_processed", &self.messages_processed)
+            .finish()
     }
 } 
