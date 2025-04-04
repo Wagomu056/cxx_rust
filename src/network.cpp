@@ -5,6 +5,7 @@
 #include <future>
 #include <vector>
 #include <mutex>
+#include <cstring>
 
 // 静的メンバ変数の初期化
 std::vector<std::string> Network::message_log;
@@ -51,4 +52,32 @@ std::vector<std::string> Network::getMessageLog() {
 void Network::clearMessageLog() {
     std::lock_guard<std::mutex> lock(log_mutex);
     message_log.clear();
+}
+
+// C言語インターフェース実装
+
+// Networkオブジェクトでメッセージを送信する（C互換）
+extern "C" const char* network_send(Network* network, const char* message) {
+    if (!network || !message) {
+        return nullptr;
+    }
+    
+    // C++のstd::stringに変換
+    std::string cpp_message(message);
+    
+    // 送信処理を実行
+    std::string result = network->send(cpp_message);
+    
+    // 結果をヒープに確保してCの文字列として返す
+    char* c_result = new char[result.length() + 1];
+    std::strcpy(c_result, result.c_str());
+    
+    return c_result;
+}
+
+// Cの文字列を解放する関数
+extern "C" void free_network_string(char* ptr) {
+    if (ptr) {
+        delete[] ptr;
+    }
 } 
