@@ -28,7 +28,8 @@ Service::~Service() {
     }
 }
 
-std::string Service::processMessage(const std::string& message) {
+// コールバックを利用するバージョン
+void Service::processMessage(const std::string& message, ResultCallback callback) {
     std::cout << "Service: Processing message: " << message << std::endl;
     
     // Rustのロジックを呼び出す
@@ -42,5 +43,8 @@ std::string Service::processMessage(const std::string& message) {
     
     // 処理結果をネットワーク層に渡す
     Network network;
-    return network.send(cpp_result);
+    std::string final_result = network.send(cpp_result);
+    
+    // コールバック関数を通じて結果を返す
+    callback(final_result);
 } 

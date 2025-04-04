@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cassert>
 #include <string>
+#include <functional>
 
 // メッセージ処理が正しくログに記録されることをテストする関数
 bool test_message_logging() {
@@ -12,9 +13,23 @@ bool test_message_logging() {
     // テスト用のメッセージ
     const std::string test_message = "Test message from unit test";
     
-    // Serviceを作成して処理を実行
+    // 結果を格納する変数
+    std::string result;
+    bool callback_called = false;
+    
+    // Serviceを作成して処理を実行（コールバック版）
     Service service;
-    std::string result = service.processMessage(test_message);
+    service.processMessage(test_message, [&result, &callback_called](const std::string& response) {
+        result = response;
+        callback_called = true;
+        std::cout << "Callback received: " << response << std::endl;
+    });
+    
+    // コールバックが呼ばれたか確認
+    if (!callback_called) {
+        std::cerr << "Error: Callback was not called" << std::endl;
+        return false;
+    }
     
     // ログを取得
     std::vector<std::string> log = Network::getMessageLog();
@@ -33,7 +48,15 @@ bool test_message_logging() {
         return false;
     }
     
-    std::cout << "Test passed: Message was correctly logged" << std::endl;
+    // 検証: コールバックで受け取った結果の内容
+    if (result.find("Response:") == std::string::npos || 
+        result.find(test_message) == std::string::npos ||
+        result.find("processed by Rust logic") == std::string::npos) {
+        std::cerr << "Error: Unexpected result content: " << result << std::endl;
+        return false;
+    }
+    
+    std::cout << "Test passed: Message was correctly logged and callback was called" << std::endl;
     return true;
 }
 
