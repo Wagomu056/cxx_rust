@@ -8,7 +8,7 @@ pub struct Network {
     _private: [u8; 0],  // opaque型としてNetworkを扱う
 }
 
-/// C++から提供されるNetwork関連の関数
+// C++から提供されるNetwork関連の関数
 extern "C" {
     pub fn network_send(network: *mut Network, message: *const c_char) -> Response;
 }
