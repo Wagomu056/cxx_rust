@@ -6,7 +6,7 @@ extern "C" {
     void* logic_processor_new();
     void logic_processor_free(void* processor);
     Response logic_processor_process(void* processor, const char* message);
-    void free_response_message(char* message);
+    void free_response(Response* response);
 }
 
 // コンストラクタ - Rustのロジックプロセッサを初期化
@@ -34,6 +34,6 @@ void Service::processMessage(const std::string& message, ResponseCallback callba
     // コールバックを呼び出して結果を返す
     callback(response);
     
-    // レスポンスのメッセージメモリを解放
-    free_response_message(response.message);
+    // レスポンスのメモリを解放
+    free_response(&response);
 } 

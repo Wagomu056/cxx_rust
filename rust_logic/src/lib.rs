@@ -7,7 +7,7 @@
 // - logic_processor_new()
 // - logic_processor_free()
 // - logic_processor_process()
-// - free_response_message()
+// - free_response()
 // ===============================================================================
 
 // モジュール定義

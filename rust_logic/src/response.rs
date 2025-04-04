@@ -32,13 +32,14 @@ impl Response {
             message: c_str.into_raw(),
         }
     }
-}
-
-/// レスポンスメッセージのメモリを解放する内部実装
-pub fn free_message_ptr(message: *mut c_char) {
-    if !message.is_null() {
-        unsafe {
-            let _ = CString::from_raw(message);
+    
+    /// レスポンスのメッセージフィールドのメモリを解放し、nullに設定する
+    pub fn free_message(&mut self) {
+        if !self.message.is_null() {
+            unsafe {
+                let _ = CString::from_raw(self.message);
+                self.message = std::ptr::null_mut();
+            }
         }
     }
 } 

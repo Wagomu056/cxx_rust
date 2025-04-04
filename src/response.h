@@ -13,9 +13,6 @@ typedef struct {
     char* message;           // レスポンスメッセージ（メモリはRust側で管理）
 } Response;
 
-// レスポンスのメッセージフィールドのメモリを解放する関数
-void free_response_message(char* message);
-
 #ifdef __cplusplus
 }
 #endif 

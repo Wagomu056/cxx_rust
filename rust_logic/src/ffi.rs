@@ -1,15 +1,15 @@
+// ===============================================================================
+// FFI関数の実装
+// 
+// このモジュールはC++から呼び出し可能なFFI関数を実装します
+// ===============================================================================
+
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
+use super::logic::LogicProcessor;
+use super::response::Response;
 
-use crate::logic::LogicProcessor;
-use crate::network::Network;
-use crate::response::{Response, free_message_ptr};
-
-//---------------------------------------------------------------------
-// C++に公開するFFI関数
-//---------------------------------------------------------------------
-
-/// LogicProcessorのインスタンスを作成
+/// 新しいLogicProcessorインスタンスを作成します
 #[no_mangle]
 pub extern "C" fn logic_processor_new() -> *mut c_void {
     let processor = LogicProcessor::new();
@@ -17,7 +17,7 @@ pub extern "C" fn logic_processor_new() -> *mut c_void {
     Box::into_raw(boxed) as *mut c_void
 }
 
-/// LogicProcessorのインスタンスを破棄
+/// LogicProcessorインスタンスを解放します
 #[no_mangle]
 pub extern "C" fn logic_processor_free(ptr: *mut c_void) {
     if ptr.is_null() {
@@ -29,7 +29,7 @@ pub extern "C" fn logic_processor_free(ptr: *mut c_void) {
     }
 }
 
-/// LogicProcessorを使ってメッセージを処理し、Networkを通じて送信
+/// メッセージを処理して結果を返します
 #[no_mangle]
 pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_char) -> Response {
     let result = unsafe {
@@ -54,10 +54,16 @@ pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_ch
     result
 }
 
-/// Responseのメッセージフィールドのメモリを解放します
+/// レスポンス構造体のメモリを解放する
+/// これはC++から呼び出されます
 #[no_mangle]
-pub extern "C" fn free_response_message(message: *mut c_char) {
-    free_message_ptr(message);
+pub extern "C" fn free_response(response: *mut Response) {
+    if !response.is_null() {
+        unsafe {
+            let response = &mut *response;
+            response.free_message();
+        }
+    }
 }
 
 /// Rustが確保したメモリを解放する
