@@ -6,18 +6,18 @@ project(cxx_rust_ffi)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 常にリリースビルドを強制
-set(CMAKE_BUILD_TYPE Release)
-
 # Rustのクレートに関する情報
 set(RUST_CRATE_DIR ${CMAKE_SOURCE_DIR}/rust_logic)
 set(RUST_TARGET_DIR ${RUST_CRATE_DIR}/target)
 
-# Set cargo executable path directly
-set(CARGO_EXECUTABLE "/Users/takuya/.cargo/bin/cargo")
-if(NOT EXISTS ${CARGO_EXECUTABLE})
-    message(FATAL_ERROR "Cargo executable not found at ${CARGO_EXECUTABLE}. Please check the path.")
-endif()
+# Cargoを検索 - 複数の一般的なパスを含める
+find_program(CARGO_EXECUTABLE cargo
+  PATHS 
+    $ENV{HOME}/.cargo/bin
+  DOC "Rust cargo package manager executable"
+  REQUIRED)
+
+message(STATUS "Found cargo: ${CARGO_EXECUTABLE}")
 
 # Releaseビルド用の設定
 set(CARGO_BUILD_ARGS "build" "--release")
