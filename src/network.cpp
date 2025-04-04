@@ -6,6 +6,7 @@
 #include <vector>
 #include <mutex>
 #include <cstring>
+#include <cstdlib> // strdup用
 
 // 静的メンバ変数の初期化
 std::vector<std::string> Network::message_log;
@@ -68,16 +69,13 @@ extern "C" const char* network_send(Network* network, const char* message) {
     // 送信処理を実行
     std::string result = network->send(cpp_message);
     
-    // 結果をヒープに確保してCの文字列として返す
-    char* c_result = new char[result.length() + 1];
-    std::strcpy(c_result, result.c_str());
-    
-    return c_result;
+    // strdupを使用して文字列を複製
+    return strdup(result.c_str());
 }
 
 // Cの文字列を解放する関数
 extern "C" void free_network_string(char* ptr) {
     if (ptr) {
-        delete[] ptr;
+        free(ptr); // strdupで確保したメモリはfreeで解放
     }
 } 
