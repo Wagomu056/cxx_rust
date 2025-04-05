@@ -3,7 +3,7 @@
 
 // Rust FFI関数の宣言
 extern "C" {
-    void* logic_processor_new();
+    void* logic_processor_new(Network* network);
     void logic_processor_free(void* processor);
     Response logic_processor_process(void* processor, const char* message);
     void free_response(Response* response);
@@ -12,7 +12,12 @@ extern "C" {
 // コンストラクタ - Rustのロジックプロセッサを初期化
 Service::Service() {
     std::cout << "Service: 初期化中..." << std::endl;
-    logic_processor = logic_processor_new();
+    
+    // ネットワークインスタンスを作成
+    network = std::make_unique<Network>();
+    
+    // ネットワークインスタンスを渡してロジックプロセッサを初期化
+    logic_processor = logic_processor_new(network.get());
 }
 
 // デストラクタ - Rustのリソースを解放
@@ -22,6 +27,7 @@ Service::~Service() {
         logic_processor_free(logic_processor);
         logic_processor = nullptr;
     }
+    // networkはスマートポインタなので自動的に解放される
 }
 
 // メッセージを処理し、コールバックで処理結果を通知

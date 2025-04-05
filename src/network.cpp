@@ -22,7 +22,7 @@ Network::~Network() {
 }
 
 Response Network::send(const std::string& message) {
-    std::cout << "Network: Sending message: " << message << std::endl;
+    std::cout << "Network::send: メッセージ受信: " << message << std::endl;
     
     // メッセージをログに記録
     {
@@ -32,16 +32,17 @@ Response Network::send(const std::string& message) {
     
     // 非同期処理を作成（別スレッドで実行）
     auto future = std::async(std::launch::async, [message]() {
-        std::cout << "Network: Processing in background thread..." << std::endl;
+        std::cout << "Network: バックグラウンドスレッドで処理中..." << std::endl;
         
         // 0.3秒待機
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         
-        return "Response: " + message + " (processed by network after delay)";
+        return "[Network] レスポンス: " + message + " (ネットワーク処理完了)";
     });
     
     // 非同期処理の結果を待機して取得
     std::string result = future.get();
+    std::cout << "Network: 処理完了 - レスポンス: " << result << std::endl;
     
     // Responseを作成して返す
     Response response;

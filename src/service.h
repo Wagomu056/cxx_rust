@@ -2,7 +2,9 @@
 
 #include <string>
 #include <functional>
+#include <memory>
 #include "response.h"
+#include "network.h"
 
 // サービスクラス - C++とRustの統合を担当
 class Service {
@@ -17,6 +19,9 @@ public:
     void processMessage(const std::string& message, ResponseCallback callback);
     
 private:
+    // ネットワークインスタンス
+    std::unique_ptr<Network> network;
+    
     // Rust側のLogicProcessorインスタンスへのポインタ
     void* logic_processor;
 };

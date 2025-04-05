@@ -7,12 +7,18 @@
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_void};
 use super::logic::LogicProcessor;
+use super::network::Network;
 use super::response::Response;
 
-/// 新しいLogicProcessorインスタンスを作成します
+/// 新しいLogicProcessorインスタンスを作成します（Networkポインタを受け取る）
 #[no_mangle]
-pub extern "C" fn logic_processor_new() -> *mut c_void {
-    let processor = LogicProcessor::new();
+pub extern "C" fn logic_processor_new(network: *mut Network) -> *mut c_void {
+    if network.is_null() {
+        // ネットワークがnullの場合、ログに記録して空のポインタを渡す
+        eprintln!("Warning: Null network pointer passed to logic_processor_new");
+    }
+    
+    let processor = LogicProcessor::new(network);
     let boxed = Box::new(processor);
     Box::into_raw(boxed) as *mut c_void
 }
@@ -42,8 +48,7 @@ pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_ch
         
         match c_str.to_str() {
             Ok(msg) => {
-                let response = processor.process_message(msg);
-                Response::success(200, &response)
+                processor.process_message(msg)
             },
             Err(_) => {
                 Response::error(400, "無効なUTF-8文字列です")

@@ -6,6 +6,9 @@ project(cxx_rust_ffi)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# デバッグモードを設定
+set(CMAKE_BUILD_TYPE Debug)
+
 # Rustのクレートに関する情報
 set(RUST_CRATE_DIR ${CMAKE_SOURCE_DIR}/rust_logic)
 set(RUST_TARGET_DIR ${RUST_CRATE_DIR}/target)
@@ -19,9 +22,9 @@ find_program(CARGO_EXECUTABLE cargo
 
 message(STATUS "Found cargo: ${CARGO_EXECUTABLE}")
 
-# Releaseビルド用の設定
-set(CARGO_BUILD_ARGS "build" "--release")
-set(RUST_LIBRARY_PATH ${RUST_TARGET_DIR}/release/librust_logic.a)
+# デバッグビルド用の設定（リリースモードを無効に）
+set(CARGO_BUILD_ARGS "build")
+set(RUST_LIBRARY_PATH ${RUST_TARGET_DIR}/debug/librust_logic.a)
 
 message(STATUS "Rust library path: ${RUST_LIBRARY_PATH}")
 message(STATUS "Cargo build command: ${CARGO_EXECUTABLE} ${CARGO_BUILD_ARGS}")
