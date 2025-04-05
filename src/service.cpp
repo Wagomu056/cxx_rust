@@ -5,9 +5,7 @@
 extern "C" {
     void* logic_processor_new(Network* network);
     void logic_processor_free(void* processor);
-    Response logic_processor_process(void* processor, const char* message);
     void logic_processor_queue_message(void* processor, const char* message);
-    void free_response(Response* response);
 }
 
 // コンストラクタ - Rustのロジックプロセッサを初期化
@@ -29,32 +27,6 @@ Service::~Service() {
         logic_processor = nullptr;
     }
     // networkはスマートポインタなので自動的に解放される
-}
-
-// メッセージを処理し、コールバックで処理結果を通知（同期処理）
-void Service::processMessage(const std::string& message, ResponseCallback callback) {
-    std::cout << "Service: メッセージ処理中: '" << message << "'" << std::endl;
-    
-    // Rust側の処理を実行
-    Response response = logic_processor_process(logic_processor, message.c_str());
-    
-    // コールバックを呼び出して結果を返す
-    callback(response);
-    
-    // レスポンスのメモリを解放
-    free_response(&response);
-}
-
-// メッセージを送信するだけ（結果は受け取らない - 同期処理）
-void Service::send(const std::string& message) {
-    std::cout << "Service: 送信のみ実行: '" << message << "'" << std::endl;
-    
-    // Rust側の処理を実行
-    Response response = logic_processor_process(logic_processor, message.c_str());
-    
-    // レスポンスは使用せずにメモリを解放
-    std::cout << "Service: 送信完了（レスポンスを無視）" << std::endl;
-    free_response(&response);
 }
 
 // メッセージをRustのキューに追加する（非同期処理）

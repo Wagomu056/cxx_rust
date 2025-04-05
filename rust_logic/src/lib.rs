@@ -5,11 +5,10 @@
 // ===============================================================================
 
 mod network;    // C++のネットワークコードへのFFIインターフェース
-mod response;   // C++とRust間で共有されるレスポンス構造体
+mod response;   // C++とRust間で共有されるレスポンス構造体（キュー処理でも使用）
 mod logic;      // ビジネスロジック実装
 mod ffi;        // C++に公開するFFI関数
 
 // 必要なモジュールを公開
 pub use network::Network;
-pub use response::Response;
 pub use logic::LogicProcessor; 

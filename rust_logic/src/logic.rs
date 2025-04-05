@@ -10,7 +10,6 @@ use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
 use std::time::Duration;
 use crossbeam_queue::SegQueue;
 use super::network::Network;
-use super::response::Response;
 
 /// キューに格納するメッセージとメタデータを表す構造体
 //@todo Colneが必要かを確認
@@ -132,56 +131,6 @@ impl LogicProcessor {
         });
         
         println!("LogicProcessor: バックグラウンドワーカースレッドを開始しました");
-    }
-    
-    /// メッセージを処理してレスポンスを返す（同期処理）
-    pub fn process_message(&mut self, message: &str) -> Response {
-        // メッセージの処理カウントを増やす
-        let mut count = self.messages_processed.lock().unwrap();
-        *count += 1;
-        let current_count = *count;
-        drop(count);  // ロックを解放
-        
-        // ネットワーク経由で送信するメッセージを構築
-        let formatted_message = format!(
-            "[LogicProcessor] ネットワーク送信: '{}' (処理回数: {})", 
-            message, 
-            current_count
-        );
-        
-        println!("LogicProcessor: Networkを使用してメッセージを送信します");
-        
-        // ネットワークポインタの取得
-        let raw_network_ptr = {
-            let guard = self.network.lock().unwrap();
-            guard.0
-        };
-        
-        // ネットワーク経由でメッセージを送信
-        if raw_network_ptr.is_null() {
-            println!("LogicProcessor: Networkポインタがnullです！代替レスポンスを返します");
-            // Networkが設定されていない場合は代替レスポンスを返す
-            return Response::success(200, &format!(
-                "Network未使用 - 処理結果: '{}' (これまでに処理したメッセージ数: {})",
-                message, 
-                current_count
-            ));
-        }
-        
-        // ネットワーク経由でメッセージを送信
-        let network_result = unsafe {
-            let network = &mut *raw_network_ptr;
-            network.send(&formatted_message)
-        };
-        
-        // 送信結果に基づいてレスポンスを作成
-        match network_result {
-            Ok(response) => response,
-            Err(err) => {
-                println!("LogicProcessor: ネットワークエラー: {}", err);
-                Response::error(500, &format!("ネットワークエラー: {}", err))
-            },
-        }
     }
     
     /// メッセージをキューに追加する（非同期処理）
