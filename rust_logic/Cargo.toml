@@ -8,4 +8,5 @@ name = "rust_logic"
 crate-type = ["staticlib"]
 
 [dependencies]
-libc = "0.2" 
+libc = "0.2"
+crossbeam-queue = "0.3" 

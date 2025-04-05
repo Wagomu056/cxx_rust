@@ -35,7 +35,7 @@ pub extern "C" fn logic_processor_free(ptr: *mut c_void) {
     }
 }
 
-/// メッセージを処理して結果を返します
+/// メッセージを処理して結果を返します（同期処理）
 #[no_mangle]
 pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_char) -> Response {
     let result = unsafe {
@@ -49,6 +49,30 @@ pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_ch
         match c_str.to_str() {
             Ok(msg) => {
                 processor.process_message(msg)
+            },
+            Err(_) => {
+                Response::error(400, "無効なUTF-8文字列です")
+            }
+        }
+    };
+
+    result
+}
+
+/// メッセージをキューに追加します（非同期処理）
+#[no_mangle]
+pub extern "C" fn logic_processor_queue_message(ptr: *mut c_void, message: *const c_char) -> Response {
+    let result = unsafe {
+        if ptr.is_null() || message.is_null() {
+            return Response::error(400, "無効なポインタが渡されました");
+        }
+        
+        let processor = &*(ptr as *mut LogicProcessor);
+        let c_str = CStr::from_ptr(message);
+        
+        match c_str.to_str() {
+            Ok(msg) => {
+                processor.queue_message(msg)
             },
             Err(_) => {
                 Response::error(400, "無効なUTF-8文字列です")

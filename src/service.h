@@ -15,11 +15,14 @@ public:
     Service();
     ~Service();
     
-    // メッセージを処理し、コールバックで処理結果を通知
+    // メッセージを処理し、コールバックで処理結果を通知（同期処理）
     void processMessage(const std::string& message, ResponseCallback callback);
     
-    // メッセージを送信するだけ（結果は受け取らない）
+    // メッセージを送信するだけ（結果は受け取らない - 同期処理）
     void send(const std::string& message);
+    
+    // メッセージをRustのキューに追加する（非同期処理）
+    void sendToQueue(const std::string& message);
     
 private:
     // ネットワークインスタンス
