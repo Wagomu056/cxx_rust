@@ -12,8 +12,6 @@ use crossbeam_queue::SegQueue;
 use super::network::Network;
 
 /// キューに格納するメッセージとメタデータを表す構造体
-//@todo Colneが必要かを確認
-#[derive(Clone)]
 struct QueuedMessage {
     content: String,
     id: usize,
