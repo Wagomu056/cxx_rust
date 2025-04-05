@@ -13,7 +13,8 @@ use super::network::Network;
 use super::response::Response;
 
 /// キューに格納するメッセージとメタデータを表す構造体
-//#[derive(Clone)]
+//@todo Colneが必要かを確認
+#[derive(Clone)]
 struct QueuedMessage {
     content: String,
     id: usize,
