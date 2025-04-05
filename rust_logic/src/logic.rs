@@ -13,16 +13,23 @@ use super::network::Network;
 use super::response::Response;
 
 /// キューに格納するメッセージとメタデータを表す構造体
+//#[derive(Clone)]
 struct QueuedMessage {
     content: String,
     id: usize,
 }
 
+// 生ポインタをラップして送信可能にするための構造体
+struct NetworkSendPtr(*mut Network);
+// 安全ではないがC++からのポインタを扱うために必要
+unsafe impl Send for NetworkSendPtr {}
+unsafe impl Sync for NetworkSendPtr {}
+
 /// ロジック処理を担当するメインの構造体
 pub struct LogicProcessor {
     messages_processed: Arc<Mutex<usize>>,
     next_message_id: Arc<Mutex<usize>>,
-    network: *mut Network,  // C++から渡されるNetworkインスタンスへのポインタ
+    network: Arc<Mutex<NetworkSendPtr>>,  // C++から渡されるNetworkインスタンスへのポインタ
     message_queue: Arc<SegQueue<QueuedMessage>>,  // 処理待ちメッセージのキュー
     worker_running: Arc<AtomicBool>,              // ワーカースレッドの状態フラグ
 }
@@ -34,15 +41,17 @@ unsafe impl Sync for LogicProcessor {}
 impl LogicProcessor {
     /// 新しいLogicProcessorインスタンスを作成
     pub fn new(network: *mut Network) -> Self {
+        println!("LogicProcessor: 新しいLogicProcessorインスタンスを作成");
         let messages_processed = Arc::new(Mutex::new(0));
         let next_message_id = Arc::new(Mutex::new(1));
         let message_queue = Arc::new(SegQueue::new());
         let worker_running = Arc::new(AtomicBool::new(true));
+        let network_ptr = Arc::new(Mutex::new(NetworkSendPtr(network)));
         
         let processor = LogicProcessor {
             messages_processed,
             next_message_id,
-            network,
+            network: network_ptr,
             message_queue: Arc::clone(&message_queue),
             worker_running: Arc::clone(&worker_running),
         };
@@ -55,10 +64,11 @@ impl LogicProcessor {
     
     /// バックグラウンドワーカースレッドを起動
     fn start_worker_thread(&self) {
+        println!("LogicProcessor: バックグラウンドワーカースレッド起動");
         let message_queue = Arc::clone(&self.message_queue);
         let messages_processed = Arc::clone(&self.messages_processed);
         let worker_running = Arc::clone(&self.worker_running);
-        let network_ptr = self.network;
+        let network_ptr = Arc::clone(&self.network);
         
         thread::spawn(move || {
             println!("LogicProcessor: メッセージ処理ワーカースレッド開始");
@@ -76,8 +86,14 @@ impl LogicProcessor {
                         println!("LogicProcessor [worker]: メッセージをキューから取得: '{}' (ID: {})", 
                                  queued_msg.content, queued_msg.id);
                         
+                        // ネットワークポインタを取得
+                        let raw_network_ptr = {
+                            let guard = network_ptr.lock().unwrap();
+                            guard.0
+                        };
+                        
                         // ネットワークポインタがあれば、実際にメッセージを送信する
-                        if !network_ptr.is_null() {
+                        if !raw_network_ptr.is_null() {
                             // メッセージを処理
                             let formatted_message = format!(
                                 "[LogicProcessor] キュー処理: '{}' (ID: {}, 処理回数: {})", 
@@ -88,12 +104,18 @@ impl LogicProcessor {
                             
                             // ネットワーク経由でメッセージを送信
                             unsafe {
-                                let network = &mut *network_ptr;
+                                let network = &mut *raw_network_ptr;
                                 match network.send(&formatted_message) {
-                                    Ok(_) => println!("LogicProcessor [worker]: メッセージを正常に送信しました"),
-                                    Err(err) => println!("LogicProcessor [worker]: 送信エラー: {}", err),
+                                    Ok(_) => {
+                                        println!("LogicProcessor [worker]: メッセージを正常に送信しました");
+                                    },
+                                    Err(err) => {
+                                        println!("LogicProcessor [worker]: 送信エラー: {}", err);
+                                    },
                                 }
                             }
+                        } else {
+                            println!("LogicProcessor [worker]: ネットワークポインタがnullです");
                         }
                         
                         println!("LogicProcessor [worker]: メッセージ処理完了: '{}'", queued_msg.content);
@@ -128,8 +150,14 @@ impl LogicProcessor {
         
         println!("LogicProcessor: Networkを使用してメッセージを送信します");
         
+        // ネットワークポインタの取得
+        let raw_network_ptr = {
+            let guard = self.network.lock().unwrap();
+            guard.0
+        };
+        
         // ネットワーク経由でメッセージを送信
-        if self.network.is_null() {
+        if raw_network_ptr.is_null() {
             println!("LogicProcessor: Networkポインタがnullです！代替レスポンスを返します");
             // Networkが設定されていない場合は代替レスポンスを返す
             return Response::success(200, &format!(
@@ -141,7 +169,7 @@ impl LogicProcessor {
         
         // ネットワーク経由でメッセージを送信
         let network_result = unsafe {
-            let network = &mut *self.network;
+            let network = &mut *raw_network_ptr;
             network.send(&formatted_message)
         };
         
@@ -196,10 +224,11 @@ impl Drop for LogicProcessor {
 impl fmt::Debug for LogicProcessor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let count = self.messages_processed.lock().unwrap();
+        let network = self.network.lock().unwrap();
         
         f.debug_struct("LogicProcessor")
             .field("messages_processed", &*count)
-            .field("network", &self.network)
+            .field("network", &format!("{:p}", network.0))
             .field("queue_size", &self.message_queue.len())
             .finish()
     }

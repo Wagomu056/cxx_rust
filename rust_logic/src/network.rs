@@ -8,6 +8,10 @@ pub struct Network {
     _private: [u8; 0],  // opaque型としてNetworkを扱う
 }
 
+// C++のNetwork構造体をスレッド間で安全に共有できるようにする
+unsafe impl Send for Network {}
+unsafe impl Sync for Network {}
+
 // C++から提供されるNetwork関連の関数
 extern "C" {
     pub fn network_send(network: *mut Network, message: *const c_char) -> Response;

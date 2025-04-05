@@ -1,23 +1,15 @@
 // ===============================================================================
-// Rust Logic FFI ライブラリ
+// Rust FFIライブラリ
 // 
-// このファイルはRustライブラリのエントリーポイントです。
-// C++からはこのモジュールを通じて以下の関数が利用可能です：
-//
-// - logic_processor_new()
-// - logic_processor_free()
-// - logic_processor_process()
-// - free_response()
+// このモジュールはRustによるビジネスロジックとC++のFFI連携を実装します
 // ===============================================================================
 
-// モジュール定義
-mod network;  // C++のNetworkクラスとのインターフェース
-mod logic;    // ロジック処理の実装
-mod ffi;      // C++に公開するFFI関数
-mod response; // レスポンス構造体の定義
+mod network;    // C++のネットワークコードへのFFIインターフェース
+mod response;   // C++とRust間で共有されるレスポンス構造体
+mod logic;      // ビジネスロジック実装
+mod ffi;        // C++に公開するFFI関数
 
-// 公開する型と関数
+// 必要なモジュールを公開
 pub use network::Network;
-pub use logic::LogicProcessor;
 pub use response::Response;
-pub use ffi::*; 
+pub use logic::LogicProcessor; 
