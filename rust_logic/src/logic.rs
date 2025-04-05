@@ -156,7 +156,7 @@ impl LogicProcessor {
     }
     
     /// メッセージをキューに追加する（非同期処理）
-    pub fn queue_message(&self, message: &str) -> Response {
+    pub fn queue_message(&self, message: &str) {
         println!("LogicProcessor: メッセージをキューに追加: '{}'", message);
         
         // メッセージIDを生成
@@ -177,12 +177,8 @@ impl LogicProcessor {
         // 現在のキューサイズを取得（概算）
         let queue_size = self.message_queue.len();
         
-        // キューに追加した確認レスポンスを返す
-        Response::success(202, &format!(
-            "メッセージをキューに追加しました (ID: {}, キューサイズ: {})",
-            message_id,
-            queue_size
-        ))
+        println!("LogicProcessor: メッセージをキューに追加しました (ID: {}, キューサイズ: {})",
+                message_id, queue_size);
     }
 }
 

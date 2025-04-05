@@ -6,7 +6,7 @@ extern "C" {
     void* logic_processor_new(Network* network);
     void logic_processor_free(void* processor);
     Response logic_processor_process(void* processor, const char* message);
-    Response logic_processor_queue_message(void* processor, const char* message);
+    void logic_processor_queue_message(void* processor, const char* message);
     void free_response(Response* response);
 }
 
@@ -62,15 +62,7 @@ void Service::sendToQueue(const std::string& message) {
     std::cout << "Service: メッセージをキューに追加: '" << message << "'" << std::endl;
     
     // Rust側のキュー処理を実行
-    Response response = logic_processor_queue_message(logic_processor, message.c_str());
+    logic_processor_queue_message(logic_processor, message.c_str());
     
-    // キューにメッセージが追加されたことを確認
-    if (response.success) {
-        std::cout << "Service: メッセージをキューに追加完了: " << response.message << std::endl;
-    } else {
-        std::cerr << "Service: キュー追加に失敗: " << response.message << std::endl;
-    }
-    
-    // レスポンスのメモリを解放
-    free_response(&response);
+    std::cout << "Service: メッセージをキューに追加完了" << std::endl;
 } 

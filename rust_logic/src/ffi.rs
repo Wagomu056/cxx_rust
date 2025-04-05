@@ -61,10 +61,11 @@ pub extern "C" fn logic_processor_process(ptr: *mut c_void, message: *const c_ch
 
 /// メッセージをキューに追加します（非同期処理）
 #[no_mangle]
-pub extern "C" fn logic_processor_queue_message(ptr: *mut c_void, message: *const c_char) -> Response {
-    let result = unsafe {
+pub extern "C" fn logic_processor_queue_message(ptr: *mut c_void, message: *const c_char) {
+    unsafe {
         if ptr.is_null() || message.is_null() {
-            return Response::error(400, "無効なポインタが渡されました");
+            println!("logic_processor_queue_message: 無効なポインタが渡されました");
+            return;
         }
         
         let processor = &*(ptr as *mut LogicProcessor);
@@ -72,15 +73,14 @@ pub extern "C" fn logic_processor_queue_message(ptr: *mut c_void, message: *cons
         
         match c_str.to_str() {
             Ok(msg) => {
-                processor.queue_message(msg)
+                processor.queue_message(msg);
+                println!("message queued: {}", msg);
             },
             Err(_) => {
-                Response::error(400, "無効なUTF-8文字列です")
+                println!("logic_processor_queue_message: 無効なUTF-8文字列です");
             }
         }
-    };
-
-    result
+    }
 }
 
 /// レスポンス構造体のメモリを解放する
