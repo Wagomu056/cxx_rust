@@ -17,11 +17,19 @@ int main() {
     // サービスインスタンスを作成
     Service service;
     
+    std::cout << "\n--- processMessage テスト（コールバックあり） ---" << std::endl;
     // メッセージを処理
     service.processMessage("こんにちは、世界！", handleResponse);
     service.processMessage("テストメッセージ", handleResponse);
+    
+    std::cout << "\n--- send テスト（結果を受け取らない） ---" << std::endl;
+    // メッセージを送信するだけ（結果は受け取らない）
+    service.send("送信のみのメッセージ1");
+    service.send("送信のみのメッセージ2");
+    
+    std::cout << "\n--- 最後のprocessMessage ---" << std::endl;
     service.processMessage("最後のメッセージ", handleResponse);
     
-    std::cout << "プログラム正常終了" << std::endl;
+    std::cout << "\nプログラム正常終了" << std::endl;
     return 0;
 } 

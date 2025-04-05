@@ -42,4 +42,16 @@ void Service::processMessage(const std::string& message, ResponseCallback callba
     
     // レスポンスのメモリを解放
     free_response(&response);
+}
+
+// メッセージを送信するだけ（結果は受け取らない）
+void Service::send(const std::string& message) {
+    std::cout << "Service: 送信のみ実行: '" << message << "'" << std::endl;
+    
+    // Rust側の処理を実行
+    Response response = logic_processor_process(logic_processor, message.c_str());
+    
+    // レスポンスは使用せずにメモリを解放
+    std::cout << "Service: 送信完了（レスポンスを無視）" << std::endl;
+    free_response(&response);
 } 

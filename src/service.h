@@ -18,6 +18,9 @@ public:
     // メッセージを処理し、コールバックで処理結果を通知
     void processMessage(const std::string& message, ResponseCallback callback);
     
+    // メッセージを送信するだけ（結果は受け取らない）
+    void send(const std::string& message);
+    
 private:
     // ネットワークインスタンス
     std::unique_ptr<Network> network;
